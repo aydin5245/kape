@@ -1,0 +1,1492 @@
+{
+  "name": "Shared Vendor Alerts with NIST NVD",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        -48
+      ],
+      "id": "e28b2c34-1947-496a-86e6-020fdcda1d89",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "46ee0b85-2435-4a5b-a9bc-56f2772955a1",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "73681185-ca38-482f-9a89-0529d8cd2d43",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "43688bb0-1613-45b5-bc4d-a697a7679210",
+              "name": "pubDate",
+              "value": "={{ $json.pubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "f1e2fac2-3216-455c-a3ea-0478dbeafff2",
+              "name": "contentSnippet",
+              "value": "={{ $json.contentSnippet }}",
+              "type": "string"
+            },
+            {
+              "id": "725f91f6-1d65-4861-aac6-7c296d9b2df7",
+              "name": "categories",
+              "value": "={{ $json.categories }} \n",
+              "type": "string"
+            },
+            {
+              "id": "b0b6e1cd-1aa3-4023-a0c0-d21d83f334db",
+              "name": "vendor",
+              "value": "={{ ( () => {\n  const base = Array.isArray($json.categories) ? $json.categories : [];\n\n  const text = [\n    $json.vendor || '',\n    $json.title || '',\n    $json.contentSnippet || '',\n    $json.vendorHint || '',\n    $json.link || ''\n  ].join(' ').toLowerCase();\n\n  const add = [];\n  if (/\\bf5\\b|big-?ip|big-?iq/.test(text)) add.push('F5');\n  if (/fortinet|fortios|fortigate|fortimanager|fortiproxy|fortiweb/.test(text)) add.push('Fortinet');\n  if (/papercut/.test(text)) add.push('PaperCut');\n  if (/trellix|mcafee\\s*enterprise/.test(text)) add.push('Trellix');\n  if (/vmware|vcenter|v-?center|esxi/.test(text)) add.push('VMware');\n  if (/\\bn8n\\b/.test(text)) add.push('n8n');\n  if (/cisco/.test(text)) add.push('Cisco');\n\n  if (add.length === 0 && typeof $json.vendor === 'string' && $json.vendor.trim()) {\n    const v = $json.vendor.trim().toLowerCase();\n    const map = { f5:'F5', fortinet:'Fortinet', papercut:'PaperCut', trellix:'Trellix', vmware:'VMware', n8n:'n8n', cisco:'Cisco' };\n    if (map[v]) add.push(map[v]);\n  }\n  return Array.from(new Set([...base, ...add]));\n})() }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "6f6b9227-2c3d-47b5-9c04-805ccb999680",
+      "name": "items"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sen bir güvenlik raporu özetleyicisin. Aşağıda verilen JSON verisindeki bilgileri incele ve yalnızca teknik olarak doğrulanmış bilgilere dayalı net, kısa ve anlamlı bir Türkçe özet hazırla. Açıklamada geçen teknik terimler orijinal dilinde (İngilizce) korunmalıdır. Bilgi eksikliğini tahmin veya spekülasyonla doldurma, yalnızca verilen bilgileri kullan.\n\n### JSON Verisi  \n{{ $json.contentSnippet }}\n\n**Çıktıyı şu formatta oluştur:**\n\n*🇺🇸~>🇹🇷 Güvenlik Raporu:*  \n[JSON içindeki bilgiyi kullanarak Türkçe açıklamayı yaz. Teknik terimleri İngilizce bırak, yalnızca çevrilmesi gereken kısımları çevir ve açıklamayı kısa, net bir biçimde oluştur.]\\n\\n  \n  - *Güvenlik Açığı Türü:* [Açıklamada geçen türü belirle (ör. Privilege Escalation, Buffer Overflow)]  \n  - *Etkilenen Alanlar:* [JSON'daki `name` alanını kullanarak etkilenen sistemleri listele.]  \n  - *İşletim Mantığı:* [Açığın nasıl işlediğini açıklayan kısa bir özet. Örneğin, \"Özel hazırlanmış bir ağ paketi ile root yetkileri elde edilebilir.\"]  \n  - *Potansiyel Etkiler:* [Açığın başarılı bir şekilde istismar edilmesi durumunda neler olabileceğini belirt.]  \n  - *Çözüm:* [Eğer {{ $json.references }} alanında çözüm bilgisi varsa, çözümü özetle. Eğer çözümle ilgili bilgi yoksa, kullanıcıları referansa yönlendir.]\n  - *Ek Bilgiler:* [{{ $json.title }} , {{ $json.pubDate.toDateTime().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toLocal().format('dd MMMM yyyy EEEE') }} category:{{ $json.categories.parseJson() }} gibi diğer önemli bilgileri buraya ekle.]\n\n### **Kesin Kurallar:**\n1. JSON verisinde yer alan bilgileri tam ve doğru şekilde kullan, ek bilgi uydurma veya tahmin yürütme.  \n2. Teknik terimler (ör. Privilege Escalation) İngilizce olarak bırakılmalı, yalnızca gerekli ifadeler Türkçe'ye çevrilmelidir.  \n3. Rapor formatı yukarıda belirtilen yapıya uygun olmalı ve net bir şekilde sunulmalıdır.  \n4. Açığın etkilerini ve çözüm önerilerini JSON verisinden çıkartarak açık bir şekilde yaz.  \n\n### Örnek Çıktı:\n\n*🇺🇸~>🇹🇷 Güvenlik Raporu:*  \nvCenter Server'da bir *Privilege Escalation* (Ayrıcalık Yükseltme) güvenlik açığı bulunmaktadır. Kötü niyetli bir aktör, ağ erişimiyle özel hazırlanmış bir ağ paketi göndererek root yetkileri elde edebilir.\n\n  - *Güvenlik Açığı Türü:* Privilege Escalation (Ayrıcalık Yükseltme)  \n  - *Etkilenen Alanlar:* Vmware vCenter\n  - *İşletim Mantığı:* Özel hazırlanmış bir ağ paketi gönderilerek root erişimi elde edilebilir.\n  - *Potansiyel Etkiler:* Yetkisiz erişim, sistemin ele geçirilmesi.  \n  - *Çözüm:* Daha fazla bilgi ve çözüm için: [Broadcom Güvenlik Tavsiyesi] https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24968\n  - *Ek Bilgiler:* CVE-2024-38813 , Son Değişiklik Tarihi: 16 Aralık 2024 Pazartesi\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1472,
+        448
+      ],
+      "id": "b64736a6-3940-43a9-93fc-6bd29515300a",
+      "name": "AI Agent",
+      "executeOnce": false,
+      "retryOnFail": false,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "cveId",
+              "cssSelector": "[data-testid=\"page-header-vuln-id\"]"
+            },
+            {
+              "key": "references",
+              "cssSelector": "#vulnHyperlinksPanel table tbody tr td a"
+            },
+            {
+              "key": "cvssScoreRaw",
+              "cssSelector": "[data-testid=\"vuln-cvss3-cna-panel-score\"]"
+            },
+            {
+              "key": "cvssVector",
+              "cssSelector": "[data-testid=\"vuln-cvss3-cna-vector\"]"
+            },
+            {
+              "key": "nvdPublished",
+              "cssSelector": "[data-testid=\"vuln-published-on\"]"
+            },
+            {
+              "key": "nvdModified",
+              "cssSelector": "[data-testid=\"vuln-last-modified-on\"]"
+            },
+            {
+              "key": "nvdSource",
+              "cssSelector": "[data-testid=\"vuln-current-description-source\"]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        32,
+        624
+      ],
+      "id": "5881bde7-5a4a-461d-be19-248dab0d0469",
+      "name": "ReferansURL"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ \n  $('LoopForHTTP').item.json.categories.toLowerCase().includes('fortinet') \n  || $('LoopForHTTP').item.json.categories.toLowerCase().includes('fortios') \n}}",
+              "rightValue": "Fortinet",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        240
+      ],
+      "id": "d7895a14-8da3-4509-b3a0-577f0337b626",
+      "name": "If-Forti",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ \n  $('LoopForHTTP').item.json.categories.toLowerCase().includes('f5') \n}}",
+              "rightValue": "F5",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        -48
+      ],
+      "id": "5437cb0d-bb4d-4320-b6c4-6d4a355b2f97",
+      "name": "If-F5",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ \n  $('LoopForHTTP').item.json.categories.toLowerCase().includes('papercut') \n}}",
+              "rightValue": "Papercut",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        96
+      ],
+      "id": "93f678e4-1e8a-4423-8e2e-66da52568b18",
+      "name": "If-Papercut",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1cc2f547-4333-4f61-b8a2-669b6444a306",
+              "leftValue": "={{ $json.pubDate }}",
+              "rightValue": "={{ new Date(Date.now() + 3*60*60*1000 - 24*60*60*1000).toISOString().slice(0,19) }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        832,
+        224
+      ],
+      "id": "2c9fc6ea-fba8-446e-ad92-a88e65c8b45a",
+      "name": "If-Date"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        832,
+        464
+      ],
+      "id": "3c54d2be-0874-450d-86ed-0f894d683e51",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.all().map(item => item.json);\n\nconst processedItems = input\n  .filter(entry => entry !== null && typeof entry === 'object')\n  .map(entry => {\n    return {\n      json: {\n        title: entry.title || \"No Title\", // Başlık\n        link: entry.link || \"No Link\", // Bağlantı\n        pubDate: entry.pubDate || \"No Date\", // Yayınlanma Tarihi\n        contentSnippet: entry.contentSnippet || \"No Content\", // İçerik\n        categories: entry.categories || [],// Kategoriler\n        vendor: entry.vendor || \"No Vendor\"\n      }\n    };\n  });\n\nreturn processedItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        208
+      ],
+      "id": "4ec2c69e-349a-439a-b03e-323caf05494a",
+      "name": "CodeforItems",
+      "alwaysOutputData": false,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.link }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        32,
+        400
+      ],
+      "id": "4977cdf3-997c-439c-86e5-db19f735b5da",
+      "name": "HTTP-Reference"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ \n  $('LoopForHTTP').item.json.categories.toLowerCase().includes('vmware') \n}}",
+              "rightValue": "Vmware",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        -192
+      ],
+      "id": "a81d99dc-4944-480a-afa9-696c4f9b62d5",
+      "name": "If-vCenter",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gelen veriyi alın\nconst inputData = items[0]?.json || {};\nconst output = inputData?.output || \"Mesaj bulunamadı.\";\n\n// Slack için uygun formatta metni düzenleyin\nlet sanitizedContent = output\n  .replace(/(\\r\\n|\\r|\\n)/g, '\\\\n') // Satır sonlarını açıkça `\\\\n` ile değiştir\n  .replace(/\"/g, '\\\\\"'); // Çift tırnakları Slack için kaçış karakteriyle değiştir\n\n// Özel olarak bozuk karakterleri düzeltme işlevi\nfunction fixSpecialCharacters(text) {\n  return text\n    .replace(/��/g, 'ı') // `��` → `ı`\n    .replace(/�/g, 'ı'); // Kalan `�` karakterlerini `ı` olarak değiştir\n}\n\n// Bozuk karakterleri düzelt\nsanitizedContent = fixSpecialCharacters(sanitizedContent);\n\n// Başlıkları koruyarak Slack formatına uygun hale getir\nsanitizedContent = sanitizedContent.replace(\n  /(\\*📰 Original Feed\\*|\\*🇺🇸~>🇹🇷 Güvenlik Raporu\\*)/gm,\n  (_, heading) => `${heading}:\\n\\n` // Başlıktan sonra iki boş satır ekle\n);\n\n// Çoklu `\\n` karakterlerini birleştir\nsanitizedContent = sanitizedContent.replace(/\\\\n+/g, '\\\\n');\n\n// HTML entity'leri temizlemek için bir işlev ekleyin\nfunction decodeHtmlEntities(text) {\n  const entities = {\n    '&#8217;': \"'\", // Tek tırnak\n    '&#8230;': '...', // Üç nokta\n    '&#8220;': '\"', // Sol çift tırnak\n    '&#8221;': '\"', // Sağ çift tırnak\n    '&amp;': '&', // Ampersand\n    '&nbsp;': ' ', // Boşluk\n    '&lt;': '<', // Küçüktür işareti\n    '&gt;': '>'  // Büyüktür işareti\n  };\n  return text.replace(/&#?\\w+;/g, match => entities[match] || match);\n}\n\n// HTML özel karakterlerini temizle\nsanitizedContent = decodeHtmlEntities(sanitizedContent);\n\n// Slack için uygun JSON formatında döndür\nreturn [\n  {\n    json: {\n      type: \"section\",\n      text: {\n        type: \"mrkdwn\",\n        text: sanitizedContent\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        448
+      ],
+      "id": "ae18397f-69d3-41e8-a813-dcfd2df0de28",
+      "name": "Serialized",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://www.f5.com/content/dam/f5-com/global-assets/press-kit/digital/f5-logo-rgb.png&w=128&h=128&fit=contain&we=1&output=png&n=-1&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "7ff7bb6a-704d-4d06-9a89-eead55a7484d",
+      "name": "F5Products-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        -368
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://avatars.githubusercontent.com/u/7244598?&w=128&h=128&fit=contain&we=1&output=png&n=-1&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "9d9c282e-babc-4525-94e5-f94074bbd0fe",
+      "name": "PaperCutProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        -192
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://www.fortinet.com/content/dam/fortinet/images/general/fortinet-footer-logo.svg?&w=128&h=128&fit=contain&we=1&output=png&n=-1&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "e6938658-01ff-4002-ba7d-bcb8189ffea5",
+      "name": "FortigateProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        16
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://news-editor.broadcom.com/wp-content/uploads/2021/09/logo_media_thumbnail.jpg?&w=128&h=128&fit=contain&we=1&output=png&n=-1&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "8c223801-077e-4433-887a-53f13c02ddf8",
+      "name": "vCenterProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        -560
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction sev(score) {\n  if (score === 0) return \"NONE\";\n  if (score <= 3.9) return \"🔵 LOW\";\n  if (score <= 6.9) return \"🟡 MEDIUM\";\n  if (score <= 8.9) return \"🔴 HIGH\";\n  if (score <= 10) return \"⚫ CRITICAL\";\n  return \"Unknown\";\n}\n\nreturn items.map(e => {\n  const d = e.json;\n  const m = (d.cvssScoreRaw || \"\").match(/(\\d+(\\.\\d+)?)/);\n  const score = m ? parseFloat(m[1]) : null;\n\n  return {\n    json: {\n      cveId: d.cveId,\n      references: Array.isArray(d.references) ? d.references : [d.references],\n      highestBaseScore: score,\n      highestBaseSeverity: score !== null ? sev(score) : \"Unknown\"\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        624
+      ],
+      "id": "5c7166d9-c277-4e39-90ff-4c264870b0fa",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        416,
+        224
+      ],
+      "id": "efad458e-df7b-4c62-81a7-a8590507ef35",
+      "name": "Combine_Position"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allData = $input.all();\nreturn allData.map(item => ({ json: item.json }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        208
+      ],
+      "id": "bf228f8b-5e6d-488b-8cba-4ae038306191",
+      "name": "All-Items"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1792,
+        784
+      ],
+      "id": "921ba0fb-a2dd-476c-9ba7-36309c65a261",
+      "name": "Wait",
+      "webhookId": "aa2c91ed-950c-463a-9e8d-0f4533681810"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1296,
+        208
+      ],
+      "id": "2ef6ede2-1b9c-4362-afdb-c18682aab7ab",
+      "name": "LoopForHTTP"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6a92d43d-e024-4dc1-8295-57cfc7db8859",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "a2f678d1-2a53-46fc-9eab-a94d570a2660",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "3211b587-0bad-4927-9427-1b5abfe83aae",
+              "name": "pubDate",
+              "value": "={{ $json.pubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "b7aeb347-ab85-49ad-831b-cea309f9b6d5",
+              "name": "categories",
+              "value": "={{ ( () => {\n  const base = Array.isArray($json.categories) ? $json.categories : [];\n\n  const text = [\n    $json.vendor || '',\n    $json.title || '',\n    $json.contentSnippet || '',\n    $json.vendorHint || '',\n    $json.link || ''\n  ].join(' ').toLowerCase();\n\n  const add = [];\n  if (/\\bf5\\b|big-?ip|big-?iq/.test(text)) add.push('F5');\n  if (/fortinet|fortios|fortigate|fortimanager|fortiproxy|fortiweb/.test(text)) add.push('Fortinet');\n  if (/papercut/.test(text)) add.push('PaperCut');\n  if (/trellix|mcafee\\s*enterprise/.test(text)) add.push('Trellix');\n  if (/vmware|vcenter|v-?center|esxi/.test(text)) add.push('VMware');\n  if (/\\bn8n\\b/.test(text)) add.push('n8n');\n  if (/cisco/.test(text)) add.push('Cisco');\n\n  if (add.length === 0 && typeof $json.vendor === 'string' && $json.vendor.trim()) {\n    const v = $json.vendor.trim().toLowerCase();\n    const map = { f5:'F5', fortinet:'Fortinet', papercut:'PaperCut', trellix:'Trellix', vmware:'VMware', n8n:'n8n', cisco:'Cisco' };\n    if (map[v]) add.push(map[v]);\n  }\n  return Array.from(new Set([...base, ...add]));\n})() }}",
+              "type": "string"
+            },
+            {
+              "id": "893246cb-7236-43b2-87bc-2eb52e650d26",
+              "name": "highestBaseScore",
+              "value": "={{ $json.highestBaseScore }}",
+              "type": "number"
+            },
+            {
+              "id": "8f3116a6-f932-4c14-be52-0cd8be17f385",
+              "name": "highestBaseSeverity",
+              "value": "={{ $json.highestBaseSeverity }}",
+              "type": "string"
+            },
+            {
+              "id": "66fd3813-be8e-4394-94cb-c1cf883c5c2c",
+              "name": "references",
+              "value": "={{ $json.references }}",
+              "type": "string"
+            },
+            {
+              "id": "25802024-9a9f-4e24-9309-ef286f1146e6",
+              "name": "contentSnippet",
+              "value": "={{ $json.contentSnippet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        224
+      ],
+      "id": "5db66081-34cd-432a-bd62-ec42a6036f57",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        448
+      ],
+      "id": "c557d7b8-5844-4a4b-81b1-0ebb93ca12f0",
+      "name": "Wait1",
+      "webhookId": "61bb89bb-3904-45c4-990f-e7c5b7ad1823"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1024,
+        208
+      ],
+      "id": "1c398d74-f3bb-4431-9cf9-bf61b1701af8",
+      "name": "24Hours"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ \n  $('LoopForHTTP').item.json.categories.toLowerCase().includes('trellix') \n  || $('LoopForHTTP').item.json.categories.toLowerCase().includes('mcafee') \n}}",
+              "rightValue": "Trellix",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        368
+      ],
+      "id": "d29e1244-fc0e-4c25-a653-813a83fceb9e",
+      "name": "If-Trellix",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://www.trellix.com/en-us/assets/logos/Trellix-Logo-Black.svg?&w=128&h=128&fit=contain&we=1&output=png&n=-1&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "dcf082df-8da9-4d9a-a7b9-86e691608978",
+      "name": "TrellixProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        208
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const store = $getWorkflowStaticData('global');\n\nconst nowUtc = new Date();\n\nfunction toTurkeyISOString(date) {\n  const istanbul = new Date(date.getTime() + 3 * 60 * 60 * 1000);\n  return istanbul.toISOString().slice(0, 19);\n}\n\nif (!store.lastRunUtc) {\n  store.lastRunUtc = new Date(nowUtc.getTime() - 7*24*60*60*1000).toISOString();\n}\n\nconst pubStartDate = toTurkeyISOString(new Date(store.lastRunUtc));\nconst pubEndDate   = toTurkeyISOString(nowUtc);\n\nstore.lastRunUtc = nowUtc.toISOString();\n\nreturn [{\n  json: {\n    pubStartDate,\n    pubEndDate,\n    nowUtc: nowUtc.toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        208
+      ],
+      "id": "064501f1-4b2c-4562-abad-8e30bcad005e",
+      "name": "Build Time Window"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        448
+      ],
+      "id": "afed1528-4253-4fb6-b1a2-e19310448131",
+      "name": "HTTP Request (per vendor)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -416,
+        208
+      ],
+      "id": "2212e61d-4323-4bd1-bfee-db19795dd424",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputs = $input.all();\nconst out = [];\n\nfunction extractCvss(cve) {\n  const m31 = cve.metrics?.cvssMetricV31?.[0]?.cvssData;\n  const m30 = cve.metrics?.cvssMetricV30?.[0]?.cvssData;\n  const m20 = cve.metrics?.cvssMetricV2?.[0];\n  if (m31) return { score: m31.baseScore, severity: cve.metrics.cvssMetricV31[0]?.baseSeverity || 'Unknown' };\n  if (m30) return { score: m30.baseScore, severity: cve.metrics.cvssMetricV30[0]?.baseSeverity || 'Unknown' };\n  if (m20) return { score: m20.baseScore, severity: m20.baseSeverity || 'Unknown' };\n  return { score: null, severity: 'Unknown' };\n}\n\nfunction firstEnDesc(arr) {\n  if (!Array.isArray(arr)) return '';\n  const en = arr.find(d => d?.lang === 'en');\n  return en?.value || arr[0]?.value || '';\n}\n\nfunction weaknessCats(ws) {\n  if (!Array.isArray(ws)) return [];\n  return ws.map(w => Array.isArray(w.description) ? w.description[0]?.value : undefined).filter(Boolean);\n}\n\nfor (const item of inputs) {\n  const root = (item.json && item.json.body && typeof item.json.body === 'object') ? item.json.body : item.json;\n  const vendor = item.json.vendor || root.vendor || 'unknown';\n\n  const vulns = Array.isArray(root.vulnerabilities) ? root.vulnerabilities : [];\n  if (!vulns.length) continue; \n\n  for (const v of vulns) {\n    const c = v.cve || v;\n    const cveId = c.id;\n    const link = `https://nvd.nist.gov/vuln/detail/${cveId}`;\n    const pubDate = c.published || c.lastModified || null;\n    const desc = firstEnDesc(c.descriptions);\n    const cvss = extractCvss(c);\n    const cats = weaknessCats(c.weaknesses);\n\n    out.push({\n      json: {\n        title: `${cveId} - ${desc.slice(0,140)}`,\n        link,\n        pubDate: pubDate ? new Date(pubDate).toUTCString().replace('GMT', '+0000') : null,\n        contentSnippet: desc,\n        categories: cats,\n        highestBaseScore: cvss.score,\n        highestBaseSeverity: cvss.severity,\n        cveId,\n        vendorHint: (JSON.stringify(c.configurations || '') + ' ' + desc).toLowerCase(),\n        vendor\n      }\n    });\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        208
+      ],
+      "id": "d8e4e001-0d68-410b-adee-7f83d1a7591e",
+      "name": "Map NVD Items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ \n  $('LoopForHTTP').item.json.categories.toLowerCase().includes('cisco') \n}}",
+              "rightValue": "Cisco",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        560
+      ],
+      "id": "fec16eb2-7bee-44fc-a068-121854834014",
+      "name": "If-Cisco",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://avatars.githubusercontent.com/u/45487711?s=200&v=4&w=128&h=128&fit=contain&we=1&output=png&n=-1&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "68a8b712-dda7-4616-9b5b-267c18d581a0",
+      "name": "N8nProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        592
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ $('LoopForHTTP').item.json.categories.toLowerCase().includes('n8n') }}",
+              "rightValue": "n8n",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        704
+      ],
+      "id": "bbc740ac-4e2e-407e-8552-19f958b55a69",
+      "name": "If-N8N",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://commons.wikimedia.org/wiki/Special:FilePath/Cisco_logo_blue_2016.svg&w=128&h=128&fit=contain&we=1&output=png&n=-1&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "7ad77742-21b9-4f0d-b9c7-f9d1b8d04dc9",
+      "name": "CiscoProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        400
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const pubStartDate = $json.pubStartDate;\nconst pubEndDate   = $json.pubEndDate;\n\nconst base = 'https://services.nvd.nist.gov/rest/json/cves/2.0';\n\nconst terms = [\n  { vendor: 'f5',       q: '(\"F5\" OR \"BIG-IP\")' },\n  { vendor: 'fortinet', q: '(Fortinet OR FortiOS OR FortiGate)' },\n  { vendor: 'papercut', q: 'PaperCut' },\n  { vendor: 'trellix',  q: 'Trellix' },\n  { vendor: 'vmware',   q: '(VMware OR vCenter OR ESXi)' },\n  { vendor: 'n8n',      q: 'n8n' },\n  { vendor: 'cisco',    q: 'Cisco' },\n  { vendor: 'zabbix',   q: 'Zabbix' },\n  { vendor: 'cohesity', q: 'Cohesity' },\n  { vendor: 'qnap',     q: 'QNAP' },\n];\n\nfunction enc(s){ return encodeURIComponent(s); }\n\nfunction urlFor(q) {\n  return `${base}?pubStartDate=${enc(pubStartDate)}&pubEndDate=${enc(pubEndDate)}&startIndex=0&resultsPerPage=200&keywordSearch=${enc(q)}`;\n}\n\nreturn terms.map(t => ({ json: { vendor: t.vendor, url: urlFor(t.q) } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        208
+      ],
+      "id": "bcdb3d89-e123-4c2a-b241-3bed53c92511",
+      "name": "Build Vendor URLs (F5/Fortinet/PaperCut/Trellix/N8N/Cisco)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ $('LoopForHTTP').item.json.categories.toLowerCase().includes('zabbix') }}",
+              "rightValue": "n8n",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        848
+      ],
+      "id": "8998ac61-ccd5-42d6-8359-8e639df09707",
+      "name": "If-Zabbix",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ $('LoopForHTTP').item.json.categories.toLowerCase().includes('cohesity') }}",
+              "rightValue": "n8n",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        1008
+      ],
+      "id": "b794e20d-e8b7-49bd-8561-6cafab485764",
+      "name": "If-Cohesity",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2bb2a046-ee67-44e8-88f9-fbb25aee902d",
+              "leftValue": "={{ $('LoopForHTTP').item.json.categories.toLowerCase().includes('qnap') }}",
+              "rightValue": "n8n",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        1168
+      ],
+      "id": "86c06564-4030-4716-8d16-6a4d4005cf6c",
+      "name": "If-QNAP",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://commons.wikimedia.org/wiki/Special:FilePath/Qnap_Logo_2004.svg&w=128&h=128&fit=contain&output=png&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "4df3054f-fbe1-4e9e-83c7-b7d0c93cd2a6",
+      "name": "QnapProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        1168
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://commons.wikimedia.org/wiki/Special:FilePath/Cohesity_logo.svg&w=128&h=128&fit=contain&output=png&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "022b027f-1f50-426f-8d0f-44918172eda9",
+      "name": "CohesityProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        960
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/XXXXXXX",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\t\"blocks\": [\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"image\",\n\t\t\t\t\t\"image_url\": \"https://uskudar.edu.tr/assets/kurumsal/logo-en/png/uskudar-university-logo.png\",\n\t\t\t\t\t\"alt_text\": \"uskudaruni\"\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\t\"text\": \"Reported for *U.U. SOC Team*\"\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \":lamax: *Lamax CyberAI News*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"image\",\n\t\t\t\"image_url\": \"https://images.weserv.nl/?url=https://commons.wikimedia.org/wiki/Special:FilePath/Zabbix_logo.svg&w=128&h=128&fit=contain&output=png&cbg=transparent&dpr=2\",\n\t\t\t\"alt_text\": \"Lamax News\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"*{{ (() => { const cat = ($('LoopForHTTP').item.json.categories || '').toLowerCase(); if (cat.includes('n8n')) return 'n8n Security Advisory'; if (cat.includes('cisco')) return 'Cisco PSIRT Advisory'; if (cat.includes('vmware')) return 'VMware Security Advisory'; if (cat.includes('f5')) return 'F5/BIG-IP Security Advisory'; if (cat.includes('fortinet')||cat.includes('fortios')||cat.includes('fortigate')) return 'Fortinet/FortiOS Advisory'; if (cat.includes('trellix')||cat.includes('mcafee')) return 'Trellix/McAfee Advisory'; if (cat.includes('papercut')) return 'PaperCut Advisory'; return 'Security Advisory'; })() }}* - {{DateTime.now().setZone(\"Europe/Istanbul\").setLocale(\"tr\").toFormat(\"dd MMMM yyyy EEEE - HH:mm:ss\")}}\" , \n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Zaafiyet :* \\t *```{{ $('LoopForHTTP').item.json.title }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*Önem Derecesi :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseSeverity && $('LoopForHTTP').item.json.highestBaseSeverity !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseSeverity : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"*CVSS Puanı :* \\t*```{{ ($('LoopForHTTP').item.json.highestBaseScore && $('LoopForHTTP').item.json.highestBaseScore !== 'Unknown') ? $('LoopForHTTP').item.json.highestBaseScore : 'Henüz yayınlanmamış' }}```*\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"{{ $json.text.text }}\"\n\t\t\t}\n\t\t},\n\t\t{\n\t\t\t\"type\": \"section\",\n\t\t\t\"text\": {\n\t\t\t\t\"type\": \"mrkdwn\",\n\t\t\t\t\"text\": \"To access the news source, please click the button.\"\n\t\t\t},\n\t\t\t\"accessory\": {\n\t\t\t\t\"type\": \"button\",\n\t\t\t\t\"text\": {\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \"Visit News\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t},\n\t\t\t\t\"value\": \"click_me_123\",\n\t\t\t\t\"style\": \"primary\",\n\t\t\t\t\"url\": \"{{ $('LoopForHTTP').item.json.link }}\",\n\t\t\t\t\"action_id\": \"button-action\"\n                }\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t},\n\t\t{\n\t\t\t\"type\": \"context\",\n\t\t\t\"elements\": [\n\t\t\t\t{\n\t\t\t\t\t\"type\": \"plain_text\",\n\t\t\t\t\t\"text\": \":uskudaruni: Uskudar University | System, Network & Cybersecurity Department\",\n\t\t\t\t\t\"emoji\": true\n\t\t\t\t}\n\t\t\t]\n\t\t},\n\t\t{\n\t\t\t\"type\": \"divider\"\n\t\t}\n\t]\n}",
+        "options": {}
+      },
+      "id": "e676ee05-ea83-4507-a3e9-577ec7200783",
+      "name": "ZabbixProducts-toSlack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        768
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatXAiGrok",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        688
+      ],
+      "id": "5682bc5e-1e38-450d-8a8a-78f995c60072",
+      "name": "xAI Grok Chat Model"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Build Time Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "items": {
+      "main": [
+        [
+          {
+            "node": "CodeforItems",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ReferansURL": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-Forti": {
+      "main": [
+        [
+          {
+            "node": "FortigateProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "If-Date": {
+      "main": [
+        [
+          {
+            "node": "All-Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CodeforItems": {
+      "main": [
+        [
+          {
+            "node": "HTTP-Reference",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Combine_Position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP-Reference": {
+      "main": [
+        [
+          {
+            "node": "ReferansURL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-Papercut": {
+      "main": [
+        [
+          {
+            "node": "PaperCutProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-F5": {
+      "main": [
+        [
+          {
+            "node": "F5Products-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "If-vCenter": {
+      "main": [
+        [
+          {
+            "node": "vCenterProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Serialized": {
+      "main": [
+        [
+          {
+            "node": "If-vCenter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-F5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-Papercut",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-Forti",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-Trellix",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-Cisco",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-N8N",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-Zabbix",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-Cohesity",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If-QNAP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Combine_Position",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine_Position": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All-Items": {
+      "main": [
+        [
+          {
+            "node": "LoopForHTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "LoopForHTTP",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Serialized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "vCenterProducts-toSlack": {
+      "main": [
+        []
+      ]
+    },
+    "F5Products-toSlack": {
+      "main": [
+        []
+      ]
+    },
+    "PaperCutProducts-toSlack": {
+      "main": [
+        []
+      ]
+    },
+    "FortigateProducts-toSlack": {
+      "main": [
+        []
+      ]
+    },
+    "LoopForHTTP": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If-Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "24Hours": {
+      "main": [
+        [
+          {
+            "node": "Build Time Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-Trellix": {
+      "main": [
+        [
+          {
+            "node": "TrellixProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Time Window": {
+      "main": [
+        [
+          {
+            "node": "Build Vendor URLs (F5/Fortinet/PaperCut/Trellix/N8N/Cisco)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request (per vendor)": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Map NVD Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map NVD Items": {
+      "main": [
+        [
+          {
+            "node": "items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-Cisco": {
+      "main": [
+        [
+          {
+            "node": "CiscoProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-N8N": {
+      "main": [
+        [
+          {
+            "node": "N8nProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Vendor URLs (F5/Fortinet/PaperCut/Trellix/N8N/Cisco)": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request (per vendor)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-Zabbix": {
+      "main": [
+        [
+          {
+            "node": "ZabbixProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-Cohesity": {
+      "main": [
+        [
+          {
+            "node": "CohesityProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-QNAP": {
+      "main": [
+        [
+          {
+            "node": "QnapProducts-toSlack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "xAI Grok Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "13854646-8b10-4a0d-981a-6e460db02c08",
+  "meta": {
+    "instanceId": "7e713c17dabeba2d8ad12650c34d5a9b9cad96f43d64ad1df42fa26d37538acc"
+  },
+  "id": "5nPau4NAeGYkrYMW",
+  "tags": [
+    {
+      "createdAt": "2025-04-22T19:32:12.388Z",
+      "updatedAt": "2025-04-22T19:32:12.388Z",
+      "id": "efl7GzAat8jutHSd",
+      "name": "Vendor"
+    },
+    {
+      "createdAt": "2024-10-22T01:23:28.454Z",
+      "updatedAt": "2024-10-22T01:23:28.454Z",
+      "id": "1CvkO8RzbnILLu84",
+      "name": "AI"
+    },
+    {
+      "createdAt": "2024-09-30T10:47:28.727Z",
+      "updatedAt": "2024-09-30T10:47:28.727Z",
+      "id": "RnMX2hF5XtoDvp8a",
+      "name": "Slack"
+    }
+  ]
+}
